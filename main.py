@@ -398,3 +398,7 @@ async def predict_video(file: UploadFile = File(...)):
     print("Returning response")
     return JSONResponse(content=response)
 
+@app.post("/test")
+async def test(input_str: str):
+    print("testing post test")
+    return {"received": input_str}
