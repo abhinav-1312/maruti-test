@@ -366,9 +366,13 @@ async def predict_video(file: UploadFile = File(...)):
 
             logging.info("Before release")
             video_capture.release()
+            logging.info("Frames", frames)
             logging.info("After release")
 
+
             frames_array = np.array(frames) / 255.0  # Normalizing frames to match model input preprocessing
+            logging.info("frames_array", frames_array)
+            logging.info("Shape: ", len(frames_array.shape))
             if len(frames_array.shape) == 3:
                 frames_array = np.expand_dims(frames_array, axis=0)
             else:
