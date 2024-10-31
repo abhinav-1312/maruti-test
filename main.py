@@ -255,6 +255,8 @@ import cv2
 import logging
 import os
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Forces TensorFlow to use the CPU
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
@@ -265,6 +267,11 @@ def load_model():
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found: {model_path}")
     model = tf.keras.models.load_model(model_path)
+    physical_devices = tf.config.list_physical_devices('GPU')
+    if physical_devices:
+        print("GPUs available:", physical_devices)
+    else:
+        print("No GPUs available. TensorFlow will use the CPU.")
     return model
 
 app = FastAPI()
