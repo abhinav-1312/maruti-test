@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-jose
+passlib[bcrypt]
+httpx
+tensorflow  # or whichever version you need
+opencv-python  # or opencv-python-headless
+python-multipart
