@@ -357,7 +357,7 @@ async def predict_video(file: UploadFile = File(...)):
                 frame = cv2.resize(frame, (224, 224))  # Adjust size based on model input
                 frames.append(frame)
 
-            prilogging.infont("Before release")
+            logging.infont("Before release")
             video_capture.release()
             logging.info("After release")
 
