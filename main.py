@@ -116,6 +116,7 @@
 
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 import tensorflow as tf
 import tempfile
@@ -129,6 +130,16 @@ def load_model():
     return model
 
 app = FastAPI()
+
+# Allow CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change this to specific origins in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Initialize your model (adjust as needed)
 model = load_model()
