@@ -327,54 +327,56 @@ async def root():
 
 @app.post("/predict")
 async def predict_video(file: UploadFile = File(...)):
-    try:
-        # Check file type
-        if file.content_type not in ["video/mp4", "video/avi", "video/mov"]:
-            raise HTTPException(status_code=400, detail="Invalid file type. Please upload a video file.")
+    # try:
+    #     # Check file type
+    #     if file.content_type not in ["video/mp4", "video/avi", "video/mov"]:
+    #         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a video file.")
 
-        # Process the video
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".mp4") as temp_file:
-            temp_file.write(await file.read())
-            temp_file.flush()
+    #     # Process the video
+    #     with tempfile.NamedTemporaryFile(delete=True, suffix=".mp4") as temp_file:
+    #         temp_file.write(await file.read())
+    #         temp_file.flush()
 
-            video_capture = cv2.VideoCapture(temp_file.name)
-            frames = []
-            while True:
-                ret, frame = video_capture.read()
-                if not ret:
-                    break
-                frame = cv2.resize(frame, (224, 224))  # Adjust size based on model input
-                frames.append(frame)
+    #         video_capture = cv2.VideoCapture(temp_file.name)
+    #         frames = []
+    #         while True:
+    #             ret, frame = video_capture.read()
+    #             if not ret:
+    #                 break
+    #             frame = cv2.resize(frame, (224, 224))  # Adjust size based on model input
+    #             frames.append(frame)
 
-            video_capture.release()
+    #         video_capture.release()
 
-            frames_array = np.array(frames) / 255.0  # Normalizing frames to match model input preprocessing
-            if len(frames_array.shape) == 3:
-                frames_array = np.expand_dims(frames_array, axis=0)
+    #         frames_array = np.array(frames) / 255.0  # Normalizing frames to match model input preprocessing
+    #         if len(frames_array.shape) == 3:
+    #             frames_array = np.expand_dims(frames_array, axis=0)
 
-            # Predict class and probability for each frame
-            predictions = [classify_frame(np.expand_dims(f, axis=0), model) for f in frames_array]
+    #         # Predict class and probability for each frame
+    #         predictions = [classify_frame(np.expand_dims(f, axis=0), model) for f in frames_array]
 
-            # Aggregate predictions using majority voting
-            class_votes = {}
-            probability_sum = {}
+    #         # Aggregate predictions using majority voting
+    #         class_votes = {}
+    #         probability_sum = {}
 
-            for class_name, prob in predictions:
-                class_votes[class_name] = class_votes.get(class_name, 0) + 1
-                probability_sum[class_name] = probability_sum.get(class_name, 0) + prob
+    #         for class_name, prob in predictions:
+    #             class_votes[class_name] = class_votes.get(class_name, 0) + 1
+    #             probability_sum[class_name] = probability_sum.get(class_name, 0) + prob
 
-            # Determine the final class by majority vote and calculate average probability
-            final_class = max(class_votes, key=class_votes.get)
-            average_probability = probability_sum[final_class] / class_votes[final_class]
+    #         # Determine the final class by majority vote and calculate average probability
+    #         final_class = max(class_votes, key=class_votes.get)
+    #         average_probability = probability_sum[final_class] / class_votes[final_class]
 
-            response = {
-                "prediction": final_class,
-                "probability": float(average_probability) * 100  # Convert to float
-            }
+    #         response = {
+    #             "prediction": final_class,
+    #             "probability": float(average_probability) * 100  # Convert to float
+    #         }
 
-    except Exception as e:
-        logging.error("Error in predict_video: %s", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
+    # except Exception as e:
+    #     logging.error("Error in predict_video: %s", str(e))
+    #     raise HTTPException(status_code=500, detail=str(e))
+    response = {
+        "data": "my response"
+    }
     return JSONResponse(content=response)
 
