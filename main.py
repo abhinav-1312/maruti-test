@@ -260,6 +260,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Load your model here. Adjust the path and loading method based on your model type.
 def load_model():
+    print("Checking model loading")
     model_path = "model_utils.h5"  # for TensorFlow/Keras
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found: {model_path}")
@@ -279,6 +280,7 @@ app.add_middleware(
 
 # Initialize your model (adjust as needed)
 model = load_model()
+print("Model loading done.")
 class_names = ['compressed', 'extended']
 
 def classify_frame(frame, model):
@@ -327,56 +329,72 @@ async def root():
 
 @app.post("/predict")
 async def predict_video(file: UploadFile = File(...)):
-    # try:
-    #     # Check file type
-    #     if file.content_type not in ["video/mp4", "video/avi", "video/mov"]:
-    #         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a video file.")
+    try:
+        # Check file type
+        print("Checking file type")
+        if file.content_type not in ["video/mp4", "video/avi", "video/mov"]:
+            raise HTTPException(status_code=400, detail="Invalid file type. Please upload a video file.")
+        print("checking file type done")
+        # Process the video
+        print("Checking with tempfile.namedTemporaryFile")
+        with tempfile.NamedTemporaryFile(delete=True, suffix=".mp4") as temp_file:
+            print("Write")
+            temp_file.write(await file.read())
+            print("Write done")
+            temp_file.flush()
+            print("FLushed")
+            print("Video capture variable")
+            video_capture = cv2.VideoCapture(temp_file.name)
+            print("Video capture done")
+            frames = []
+            while True:
+                ret, frame = video_capture.read()
+                if not ret:
+                    print("Inside while true break")
+                    break
+                frame = cv2.resize(frame, (224, 224))  # Adjust size based on model input
+                frames.append(frame)
 
-    #     # Process the video
-    #     with tempfile.NamedTemporaryFile(delete=True, suffix=".mp4") as temp_file:
-    #         temp_file.write(await file.read())
-    #         temp_file.flush()
+            print("Before release")
+            video_capture.release()
+            print("After release")
 
-    #         video_capture = cv2.VideoCapture(temp_file.name)
-    #         frames = []
-    #         while True:
-    #             ret, frame = video_capture.read()
-    #             if not ret:
-    #                 break
-    #             frame = cv2.resize(frame, (224, 224))  # Adjust size based on model input
-    #             frames.append(frame)
+            frames_array = np.array(frames) / 255.0  # Normalizing frames to match model input preprocessing
+            if len(frames_array.shape) == 3:
+                frames_array = np.expand_dims(frames_array, axis=0)
+            else:
+                print("Len > 3")
 
-    #         video_capture.release()
+            # Predict class and probability for each frame
+            print("Predict class and probability")
+            predictions = [classify_frame(np.expand_dims(f, axis=0), model) for f in frames_array]
+            print("Predict class and probability done")
+            # Aggregate predictions using majority voting
+            class_votes = {}
+            probability_sum = {}
+            
+            print("Before for class_name")
+            for class_name, prob in predictions:
+                class_votes[class_name] = class_votes.get(class_name, 0) + 1
+                probability_sum[class_name] = probability_sum.get(class_name, 0) + prob
+            print("For class_name done")
+            # Determine the final class by majority vote and calculate average probability
+            final_class = max(class_votes, key=class_votes.get)
+            average_probability = probability_sum[final_class] / class_votes[final_class]
 
-    #         frames_array = np.array(frames) / 255.0  # Normalizing frames to match model input preprocessing
-    #         if len(frames_array.shape) == 3:
-    #             frames_array = np.expand_dims(frames_array, axis=0)
+            print("After avg probability")
+            print("Before building response")
+            response = {
+                "prediction": final_class,
+                "probability": float(average_probability) * 100  # Convert to float
+            }
 
-    #         # Predict class and probability for each frame
-    #         predictions = [classify_frame(np.expand_dims(f, axis=0), model) for f in frames_array]
+            print("After building response")
 
-    #         # Aggregate predictions using majority voting
-    #         class_votes = {}
-    #         probability_sum = {}
-
-    #         for class_name, prob in predictions:
-    #             class_votes[class_name] = class_votes.get(class_name, 0) + 1
-    #             probability_sum[class_name] = probability_sum.get(class_name, 0) + prob
-
-    #         # Determine the final class by majority vote and calculate average probability
-    #         final_class = max(class_votes, key=class_votes.get)
-    #         average_probability = probability_sum[final_class] / class_votes[final_class]
-
-    #         response = {
-    #             "prediction": final_class,
-    #             "probability": float(average_probability) * 100  # Convert to float
-    #         }
-
-    # except Exception as e:
-    #     logging.error("Error in predict_video: %s", str(e))
-    #     raise HTTPException(status_code=500, detail=str(e))
-    response = {
-        "data": "my response"
-    }
+    except Exception as e:
+        print("Exception")
+        logging.error("Error in predict_video: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+    print("Returning response")
     return JSONResponse(content=response)
 
